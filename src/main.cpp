@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <BMI088.h>
 #include <SdFat.h>
+#include <Adafruit_BMP280.h>
 
-typedef struct realPacket {
+typedef struct __attribute__((packed)) realPacket {
   int magic;
   float time;
   float latitude;
@@ -16,6 +17,11 @@ typedef struct realPacket {
   float avelz;
   float temp;
   float pressure;
+};
+
+typedef struct __attribute__((packed)) tempPack {
+  int magic;
+  float time;
 };
 
 /* accel object */
@@ -33,7 +39,6 @@ unsigned long previousTime = 0;
 void setup() {
   int status;
   Serial.begin(115200);
-
   while(!Serial) {}
   /* start the sensors */
   status = accel.begin();
@@ -67,12 +72,14 @@ void loop() {
   gyro.readSensor();
   /* print the data */
 
-  realPacket data = {0xBEEF00D, (currentLog-offset), 0.00, 0.00, 1000.0, accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss(),
-                      gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), accel.getTemperature_C(), 1000.0};
-
+  realPacket data = {0xBEEFF00D, (currentLog-offset), 0.00, 0.00, 100.0, accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss(),
+                      gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), accel.getTemperature_C(), 100.0};
+  //realPacket data = {0xBEEF00D, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  //tempPack data = {43834729, 63579792};
   if (file) {
     file.write((const uint8_t *)&data, sizeof(data));
-    Serial.write((const uint8_t *)&data, sizeof(data)));
+    Serial.write((const uint8_t *)&data, sizeof(data));
+    
   } else {
     Serial.println("Error opening datalog.txt");
   }
