@@ -79,7 +79,6 @@ void loop() {
   if (file) {
     file.write((const uint8_t *)&data, sizeof(data));
     Serial.write((const uint8_t *)&data, sizeof(data));
-    
   } else {
     Serial.println("Error opening datalog.txt");
   }
