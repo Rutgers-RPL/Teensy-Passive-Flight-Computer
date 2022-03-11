@@ -17,7 +17,10 @@ typedef struct {
   float altitude;
   float pressure;
   float temp;
-  float q[4];
+  float w;
+  float x;
+  float y;
+  float z;
 } __attribute__((packed)) realPacket;
 
 /* accel object */
@@ -42,8 +45,8 @@ int start;
 
 void setup() {
   int status;
-  Serial.begin(115200);
-  Serial3.begin(115200);
+  Serial.begin(9600);
+  Serial3.begin(9600);
   while(!Serial) {}
   while(!Serial3) {}
   /* start the sensors */
@@ -133,26 +136,31 @@ void loop() {
   gyro.readSensor();
   /* print the data */
 
+
   realPacket data = {0xBEEFF00D, (micros()-offset), accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss(),
                       gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), baro.readAltitudeM(),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
-
-    // x y z
-   float am[3] = {data.accx, data.accy, data.accz};
-   float wm[3] = {data.avelx, data.avely, data.avelz};
-   updateIMU(am, wm, (micros()-previousTime) / 1000000.0);
-   get_q(data.q);
+  // x y z
+  float am[3] = {data.accx, data.accy, data.accz};
+  float wm[3] = {data.avelx, data.avely, data.avelz};
+  float q[4];
+  updateIMU(am, wm, (micros()-previousTime) / 1000000.0);
+  get_q(q);
+  
+  data.w = q[0];
+  data.x = q[1];
+  data.y = q[2];
+  data.z = q[3];
 
   previousTime = micros();
 
   if (file) {
     file.write((const uint8_t *)&data, sizeof(data));
     Serial.write((const uint8_t *)&data, sizeof(data));
+    Serial3.flush();
+    Serial3.write((const uint8_t *)&data, sizeof(data));
     //Serial.print(data.altitude); Serial.print("\t"); Serial.println(data.pressure);
     //Serial3.print(data.altitude); Serial3.print("\t"); Serial3.println(data.pressure);
-    if (Serial3.available()) {
-      Serial.println(Serial3.readString());
-    }
     //Serial.print(q[0]); Serial.print("\t");  Serial.print(q[1]); Serial.print("\t");  Serial.print(q[2]); Serial.print("\t");  Serial.print(q[3]);
     //Serial.println();
     //Serial.print("w"); Serial.print(q[0]); Serial.print("wa"); Serial.print(q[1]);  Serial.print("ab");  Serial.print(q[2]); Serial.print("bc");  Serial.print(q[3]);  Serial.print("c");
