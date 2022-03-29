@@ -42,6 +42,8 @@ const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
 char fileName[] = FILE_BASE_NAME "00.csv";
 int count;
 int start;
+long csCounter;
+String callSign = "KD2YPN";
 
 void setup() {
   int status;
@@ -63,7 +65,6 @@ void setup() {
     while (1) {}
   }
   status = baro.begin();
-
   if (status < 0) {
     if(ERR_DATA_BUS == status) {
       Serial.println("Data bus error!!!");
@@ -72,7 +73,7 @@ void setup() {
     }
     while (1) {}
   }
-  while( !baro.setSamplingMode(baro.eUltraPrecision)){
+  while(!baro.setSamplingMode(baro.eUltraPrecision)){
     Serial.println("Set samping mode fail, retrying....");
     delay(1000);
   }
@@ -114,9 +115,20 @@ void setup() {
   Serial.print("samping frequency : ");
   Serial.print(sampingFrequencyHz);
   Serial.println(" Hz");
+
+  // Callsign Transmission
+  Serial3.println(callSign);
+  csCounter = millis();
 }
 
 void loop() {
+  
+  // Callsign Transmission
+  if (millis() - csCounter >= 550000) {
+    Serial3.println(callSign);
+    csCounter = millis();
+  }
+
   // Reset Orientation
   if (Serial.available()) {
     if (Serial.readString() == "reset") {
@@ -135,7 +147,6 @@ void loop() {
   /* read the gyro */
   gyro.readSensor();
   /* print the data */
-
 
   realPacket data = {0xBEEFF00D, (micros()-offset), accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss(),
                       gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), baro.readAltitudeM(),  baro.readPressPa(),
