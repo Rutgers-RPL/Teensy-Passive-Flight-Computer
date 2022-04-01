@@ -43,7 +43,7 @@ char fileName[] = FILE_BASE_NAME "00.csv";
 int count;
 int start;
 long csCounter;
-String callSign = "KD2YPN";
+String callSign = "__KD2YPN__";
 
 void setup() {
   int status;
@@ -51,6 +51,7 @@ void setup() {
   Serial3.begin(9600);
   while(!Serial) {}
   while(!Serial3) {}
+  Serial3.flush();
   /* start the sensors */
   status = accel.begin();
   if (status < 0) {
@@ -123,9 +124,14 @@ void setup() {
 
 void loop() {
   
+  int packetsize = 60;
+
   // Callsign Transmission
   if (millis() - csCounter >= 550000) {
-    Serial3.println(callSign);
+    packetsize = 10;
+    Serial3.print(packetsize);
+    Serial3.print(callSign);
+    packetsize = 60;
     csCounter = millis();
   }
 
@@ -169,6 +175,7 @@ void loop() {
     file.write((const uint8_t *)&data, sizeof(data));
     Serial.write((const uint8_t *)&data, sizeof(data));
     Serial3.flush();
+    Serial3.write((const uint8_t *)&packetsize, sizeof(packetsize));
     Serial3.write((const uint8_t *)&data, sizeof(data));
     //Serial.print(data.altitude); Serial.print("\t"); Serial.println(data.pressure);
     //Serial3.print(data.altitude); Serial3.print("\t"); Serial3.println(data.pressure);
