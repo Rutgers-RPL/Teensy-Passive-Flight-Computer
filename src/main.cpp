@@ -35,6 +35,8 @@ FsFile file;
 
 unsigned long offset = 0;
 unsigned long previousTime = 0;
+
+double lastTime = micros();
 double am[3];
 double wm[3];
 #define FILE_BASE_NAME "Data_"
@@ -47,8 +49,8 @@ String callSign = "__KD2YPN__";
 
 void setup() {
   int status;
-  Serial.begin(9600);
-  Serial3.begin(9600);
+  Serial.begin(500000);
+  Serial3.begin(500000);
   while(!Serial) {}
   while(!Serial3) {}
   Serial3.flush();
@@ -155,12 +157,13 @@ void loop() {
   /* print the data */
 
   realPacket data = {0xBEEFF00D, (micros()-offset), accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss(),
-                      gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), baro.readAltitudeM(),  baro.readPressPa(),
+                      gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), baro.readAltitudeM(), baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
   // x y z
   float am[3] = {data.accx, data.accy, data.accz};
   float wm[3] = {data.avelx, data.avely, data.avelz};
   float q[4];
+  
   updateIMU(am, wm, (micros()-previousTime) / 1000000.0);
   get_q(q);
   
@@ -180,4 +183,14 @@ void loop() {
   } else {
     Serial.println("Error opening datalog.txt");
   }
+
+  // count++;
+  // if (count%100==0){
+  //   double time2 = micros();
+  //   double delta = (time2-lastTime) / 1000000.0;
+  //   lastTime = time2;
+  //   Serial.println("\nfps: ");
+  //   Serial.println(100/delta);
+  //   Serial.println("---------------");
+  // }
 }
