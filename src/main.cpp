@@ -127,7 +127,7 @@ void loop() {
   int packetsize = 60;
 
   // Callsign Transmission
-  if (millis() - csCounter >= 550000) {
+  if (millis() - csCounter >= 540000) {
     packetsize = 10;
     Serial3.print(packetsize);
     Serial3.print(callSign);
@@ -177,12 +177,6 @@ void loop() {
     Serial3.flush();
     Serial3.write((const uint8_t *)&packetsize, sizeof(packetsize));
     Serial3.write((const uint8_t *)&data, sizeof(data));
-    //Serial.print(data.altitude); Serial.print("\t"); Serial.println(data.pressure);
-    //Serial3.print(data.altitude); Serial3.print("\t"); Serial3.println(data.pressure);
-    //Serial.print(q[0]); Serial.print("\t");  Serial.print(q[1]); Serial.print("\t");  Serial.print(q[2]); Serial.print("\t");  Serial.print(q[3]);
-    //Serial.println();
-    //Serial.print("w"); Serial.print(q[0]); Serial.print("wa"); Serial.print(q[1]);  Serial.print("ab");  Serial.print(q[2]); Serial.print("bc");  Serial.print(q[3]);  Serial.print("c");
-    //Serial.println();  
   } else {
     Serial.println("Error opening datalog.txt");
   }
