@@ -47,8 +47,8 @@ String callSign = "__KD2YPN__";
 
 void setup() {
   int status;
-  Serial.begin(9600);
-  Serial3.begin(9600);
+  Serial.begin(115200);
+  Serial3.begin(115200);
   while(!Serial) {}
   while(!Serial3) {}
   Serial3.flush();
@@ -85,15 +85,15 @@ void setup() {
   }
   Serial.println("\nFIFO SDIO mode.");
     while (sd.exists(fileName)) {
-    if (fileName[BASE_NAME_SIZE + 1] != '9') {
-      fileName[BASE_NAME_SIZE + 1]++;
-    } else if (fileName[BASE_NAME_SIZE] != '9') {
-      fileName[BASE_NAME_SIZE + 1] = '0';
-      fileName[BASE_NAME_SIZE]++;
-    } else {
-      Serial.println("Can't create file name");
-      return;
-    }
+      if (fileName[BASE_NAME_SIZE + 1] != '9') {
+        fileName[BASE_NAME_SIZE + 1]++;
+      } else if (fileName[BASE_NAME_SIZE] != '9') {
+        fileName[BASE_NAME_SIZE + 1] = '0';
+        fileName[BASE_NAME_SIZE]++;
+      } else {
+        Serial.println("Can't create file name");
+        return;
+      }
   }
   file = sd.open(fileName, FILE_WRITE);
   if (!file) {
@@ -154,11 +154,11 @@ void loop() {
   gyro.readSensor();
   /* print the data */
 
-  realPacket data = {0xBEEFF00D, (micros()-offset), accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss(),
-                      gyro.getGyroX_rads(), gyro.getGyroY_rads(), gyro.getGyroZ_rads(), baro.readAltitudeM(),  baro.readPressPa(),
+  realPacket data = {0xBEEFF00D, (micros()-offset), accel.getAccelZ_mss(), accel.getAccelY_mss(), -1 * accel.getAccelX_mss(),
+                      -1 * gyro.getGyroZ_rads(), -1 * gyro.getGyroY_rads(), gyro.getGyroX_rads(), baro.readAltitudeM(),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
   // x y z
-  float am[3] = {data.accx, data.accy, data.accz};
+  float am[3] = {data.accx, data.accy, -1 * data.accz};
   float wm[3] = {data.avelx, data.avely, data.avelz};
   float q[4];
   updateIMU(am, wm, (micros()-previousTime) / 1000000.0);
@@ -172,6 +172,12 @@ void loop() {
   previousTime = micros();
 
   if (file) {
+    /*
+    Serial.print("w"); Serial.print(data.w); Serial.print("w");
+    Serial.print("a"); Serial.print(data.x); Serial.print("a");
+    Serial.print("b"); Serial.print(data.y); Serial.print("b");
+    Serial.print("c"); Serial.print(data.z); Serial.println("c");
+    */
     file.write((const uint8_t *)&data, sizeof(data));
     Serial.write((const uint8_t *)&data, sizeof(data));
     Serial3.flush();
