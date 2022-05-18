@@ -266,8 +266,6 @@ void loop() {
   intTime = micros();
   */
 
-
-
   data.w = q[0];
   data.x = q[1];
   data.y = q[2];
@@ -292,7 +290,6 @@ void loop() {
     file.close();
     file = sd.open(fileName, FILE_WRITE);
   }
-  
 
   count += 1;
 }
