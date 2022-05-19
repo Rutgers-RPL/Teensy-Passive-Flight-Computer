@@ -76,6 +76,12 @@ bool ledOn;
 long lastTime;
 
 long intTime;
+float lPosX = 0;
+float lPosY = 0;
+float lPosZ = 0;
+float lVelX = 0;
+float lVelY = 0;
+float lVelZ = 0;
 double posX = 0;
 double posY = 0;
 double posZ = 0;
@@ -205,10 +211,11 @@ void loop() {
   float am[3] = {data.accx, data.accy, data.accz};
   float wm[3] = {data.avelx, data.avely, data.avelz};
   float q[4];
+  
   updateIMU(am, wm, (micros()-previousTime) / 1000000.0);
+  previousTime = micros();
   get_q(q);
   
-  /*
   auto quat = Quaternion();
   quat.a = q[0];
   quat.b = q[1];
@@ -220,40 +227,45 @@ void loop() {
 
   auto vec = quat.rotate(acc) + Quaternion(0, 0, -9.81);
 
+
   double delta = ((double) (micros() - intTime)) / 1000000;
   if ((micros() - offset) <= 5000000) {
-    
+    lVelX = vec.b;
+    lVelY = vec.c;
+    lVelZ = vec.d;
+    lPosX = velX;
+    lPosY = velY;
+    lPosZ = velZ;
   } else {
     vec.b = accx.filterIn(vec.b);
     if (abs(vec.b) > 0.05) {
-      Serial.println("bob");
-      velX += delta * vec.b;
+      velX += delta * (lVelX + (vec.b - lVelX)/2.0);
     }
     vec.c = accy.filterIn(vec.c);
     if (abs(vec.c) > 0.05) {
-      Serial.println("bob");
-      velY += delta * vec.c;
+      velY += delta * (lVelY + (vec.c - lVelY)/2.0);
     }
     vec.d = accz.filterIn(vec.d);
     if (abs(vec.d) > 0.05) {
-      Serial.println("bob");
-      velZ += delta * vec.d;
+      velZ += delta * (lVelZ + (vec.d - lVelZ)/2.0);
     }
 
     if (abs(velX) > 0.1) {
-      Serial.println("nob");
-      posX += delta * velX;
+      posX += delta * (lPosZ + (velX - lPosZ)/2.0);
     }
     if (abs(velY) > 0.1) {
-      Serial.println("nob");
-      posY += delta * velY;
+      posY += delta * (lPosZ + (velY - lPosZ)/2.0);
     }
     if (abs(velZ) > 0.1) {
-      Serial.println("nob");
-      posZ += delta * velZ;
+      posZ += delta * (lPosZ + (velZ - lPosZ)/2.0);
     }
 
-    intTime = micros();
+    lVelX = vec.b;
+    lVelY = vec.c;
+    lVelZ = vec.d;
+    lPosX = velX;
+    lPosY = velY;
+    lPosZ = velZ;
 
     Serial.printf("ACCEL x: %f   y: %f    z: %f", vec.b, vec.c, vec.d);
     Serial.println();
@@ -264,14 +276,14 @@ void loop() {
   }
 
   intTime = micros();
-  */
+  
 
   data.w = q[0];
   data.x = q[1];
   data.y = q[2];
   data.z = q[3];
 
-  previousTime = micros();
+
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
@@ -284,8 +296,8 @@ void loop() {
     data.code = -1;
   }
   if (count % 10 == 0) {
-    Serial.write((const uint8_t *)&data, sizeof(data));
-    Serial3.write((const uint8_t *)&data, sizeof(data));
+    //Serial.write((const uint8_t *)&data, sizeof(data));
+    //Serial3.write((const uint8_t *)&data, sizeof(data));
 
     file.close();
     file = sd.open(fileName, FILE_WRITE);
