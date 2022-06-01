@@ -166,15 +166,7 @@ void setup() {
   Serial.print(sampingFrequencyHz);
   Serial.println(" Hz");
 
-  // Callsign Transmission
-  Serial3.println(callSign);
-  csCounter = millis();
-  blinkCounter = millis();
-  ledOn = true;
-
-  int count = 0;
-  lastTime = millis();
-  intTime = micros();
+  
 }
 
 void loop() {
@@ -267,12 +259,12 @@ void loop() {
     lPosY = velY;
     lPosZ = velZ;
 
-    Serial.printf("ACCEL x: %f   y: %f    z: %f", vec.b, vec.c, vec.d);
-    Serial.println();
-    Serial.printf("VELOC x: %f   y: %f    z: %f", velX, velY, velZ);
-    Serial.println();
-    Serial.printf("POSIT x: %f   y: %f    z: %f", posX, posY, posZ);
-    Serial.println();
+    // Serial.printf("ACCEL x: %f   y: %f    z: %f", vec.b, vec.c, vec.d);
+    // Serial.println();
+    // Serial.printf("VELOC x: %f   y: %f    z: %f", velX, velY, velZ);
+    // Serial.println();
+    // Serial.printf("POSIT x: %f   y: %f    z: %f", posX, posY, posZ);
+    // Serial.println();
   }
 
   intTime = micros();
@@ -282,8 +274,6 @@ void loop() {
   data.x = q[1];
   data.y = q[2];
   data.z = q[3];
-
-
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
@@ -296,8 +286,8 @@ void loop() {
     data.code = -1;
   }
   if (count % 10 == 0) {
-    //Serial.write((const uint8_t *)&data, sizeof(data));
-    //Serial3.write((const uint8_t *)&data, sizeof(data));
+    Serial.write((const uint8_t *)&data, sizeof(data));
+    Serial3.write((const uint8_t *)&data, sizeof(data));
 
     file.close();
     file = sd.open(fileName, FILE_WRITE);
