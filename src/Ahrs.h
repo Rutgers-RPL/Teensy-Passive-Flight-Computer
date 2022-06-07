@@ -18,7 +18,7 @@ class Ahrs{
         double grange = 0.1;
         double fa = 0;
 
-        double Knorm = 0.5;
+        double Knorm = 0.75;
         double Kinit = 15;
         double tinit = 3;
 

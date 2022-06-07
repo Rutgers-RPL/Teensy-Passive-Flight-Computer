@@ -265,7 +265,7 @@ void loop() {
                       gyro.getGyroZ_rads(), gyro.getGyroY_rads(), gyro.getGyroX_rads(), alt.filterIn(baro.readAltitudeM()),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
 
-  Quaternion groundToSensorFrame = orientation.conj();
+  Quaternion groundToSensorFrame = orientation;
   data.w = groundToSensorFrame.a;
   data.x = groundToSensorFrame.b;
   data.y = groundToSensorFrame.c;
