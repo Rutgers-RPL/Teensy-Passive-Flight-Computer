@@ -1,11 +1,15 @@
 #include <Arduino.h>
 #include <BMI085.h>
 #include <DFRobot_BMP3XX.h>
+#include <DFRobot_BMM150.h>
 #include <SdFat.h>
-#include <MEFKcRP.h>
 #include <FastCRC.h>
 #include <filters.h>
 #include <Quaternion.h>
+#include <Vec3.h>
+#include <Ahrs.h>
+
+#define _g_ (9.80665)
 
 typedef struct {
   short magic;
@@ -27,10 +31,9 @@ typedef struct {
   unsigned int checksum;
 } __attribute__((packed)) realPacket;
 
-const float accxOffset = -0.015;
-const float accyOffset = -0.045;
-const float acczOffset = -0.1;
-
+const float accxOffset = 0;
+const float accyOffset = 0;
+const float acczOffset = 0;
 
 const float cutoff_freq = 2.0;
 const float acutoff_freq = 1.3;
@@ -51,6 +54,8 @@ Bmi085Accel accel(Wire,0x18);
 Bmi085Gyro gyro(Wire,0x68);
 /* baro object */
 DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
+/*mag*/
+DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
 SdFs sd;
 FsFile file;
@@ -67,15 +72,11 @@ const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
 char fileName[] = FILE_BASE_NAME "00.csv";
 int count;
 int start;
-long csCounter;
-String callSign = "@@@___KD2ZFK___@@@___KD2ZFK___@@@___KD2ZFK___@@@";
+
 const int led = 13;
 long blinkCounter;
 bool ledOn;
 
-long lastTime;
-
-long intTime;
 float lPosX = 0;
 float lPosY = 0;
 float lPosZ = 0;
@@ -88,6 +89,60 @@ double posZ = 0;
 double velX = 0;
 double velY = 0;
 double velZ = 0;
+
+Quaternion dcm2quat(Vec3 north, Vec3 east, Vec3 down){
+  // dcm2quat https://intra.ece.ucr.edu/~farrell/AidedNavigation/D_App_Quaternions/Rot2Quat.pdf
+  int maximum = 1;
+  double q = (1+north.x+east.y+down.z);
+  double o = (1+north.x-east.y-down.z);
+  if (o > q){
+    q = o;
+    maximum = 2;
+  }
+  o = (1-north.x+east.y-down.z);
+  if (o > q){
+    q = o;
+    maximum = 3;
+  }
+  o = (1-north.x-east.y+down.z);
+  if (o > q){
+    q = o;
+    maximum = 4;
+  }
+
+  Quaternion output = Quaternion();
+  switch(maximum){
+    case 1:
+      output.a = 0.5*sqrt(q);
+      output.b = (down.y-east.z)/(4*output.a);
+      output.c = (north.z-down.x)/(4*output.a);
+      output.d = (east.x-north.y)/(4*output.a);
+      break;
+    case 2:
+      output.b = 0.5*sqrt(q);
+      output.a = (down.y-east.z)/(4*output.b);
+      output.c = (north.y+east.x)/(4*output.b);
+      output.d = (north.z+down.x)/(4*output.b);
+      break;
+    case 3:
+      output.c = 0.5*sqrt(q);
+      output.a = (north.z-down.x)/(4*output.c);
+      output.b = (north.y+east.x)/(4*output.c);
+      output.d = (east.z+down.y)/(4*output.c);
+      break;
+    case 4:
+      output.d = 0.5*sqrt(q);
+      output.a = (east.x-north.y)/(4*output.d);
+      output.b = (north.z+down.x)/(4*output.d);
+      output.c = (east.z+down.y)/(4*output.d);
+      break;
+  }
+
+  output.normalize();
+  return output;
+}
+
+Ahrs thisahrs;
 
 void setup() {
   int status;
@@ -123,6 +178,12 @@ void setup() {
     delay(1000);
   }
 
+  bmm150.begin();
+  bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
+  bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
+  bmm150.setRate(BMM150_DATA_RATE_10HZ);
+  bmm150.setMeasurementXYZ();
+
   if (!sd.begin(SdioConfig(FIFO_SDIO))) {
       Serial.println("SD Begin Failed");
   }
@@ -138,8 +199,8 @@ void setup() {
         fileName[BASE_NAME_SIZE]++;
       } else {
         Serial.println("Can't create file name");
-        realPacket data;
-        data.code = -1;
+        // realPacket data;
+        // data.code = -1;
         
         return;
       }
@@ -153,29 +214,11 @@ void setup() {
   Serial.println(fileName);
 
   Serial.println("Starting ...");
-
-  // EKF Initialize
-  OrientationEstimator();
-  float sampingPeriodus = baro.getSamplingPeriodUS();
-  Serial.print("samping period : ");
-  Serial.print(sampingPeriodus);
-  Serial.println(" us");
-
-  float sampingFrequencyHz = 1000000 / sampingPeriodus;
-  Serial.print("samping frequency : ");
-  Serial.print(sampingFrequencyHz);
-  Serial.println(" Hz");
-
-  // Callsign Transmission
-  Serial3.println(callSign);
-  csCounter = millis();
-  blinkCounter = millis();
-  ledOn = true;
-
-  int count = 0;
-  lastTime = millis();
-  intTime = micros();
 }
+
+Quaternion orientation = Quaternion();
+long lastTime = micros();
+double threshold = 0.05;
 
 void loop() {
   if (millis() - blinkCounter >= 500) {
@@ -188,116 +231,60 @@ void loop() {
     }
     blinkCounter = millis();
   }
-  // Callsign Transmission
-  if (millis() - csCounter >= 540000) {
-    Serial3.println();
-    Serial3.println(callSign);
-    csCounter = millis();
-  }
 
   /* read the accel */
   accel.readSensor();
-  /* read the gyro */
-  gyro.readSensor();
   /* print the data */
-  lastTime = millis();
+  Vec3 acc = Vec3(accel.getAccelY_mss(),accel.getAccelX_mss(),accel.getAccelZ_mss());
+
+  sBmm150MagData_t magData = bmm150.getGeomagneticData();
+  Vec3 mag(magData.x,magData.y,magData.z);
+
+  gyro.readSensor();
+  Vec3 gyr = Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
+
+  thisahrs.update(acc,gyr,mag);
+  orientation = thisahrs.q;
+
+  // double dt = ((double) (micros() - lastTime)) / 1000000;
+  // if(acc.magnitude()<_g_+threshold && acc.magnitude()>_g_-threshold){
+  //   Vec3 down = -1*acc;
+  //   down.normalize();
+  //   Vec3 east = down.cross(mag);
+  //   east.normalize();
+  //   Vec3 north = east.cross(down);
+  //   north.normalize();
+
+  //   orientation = dcm2quat(north, east, down);
+  // } else {
+  //   orientation = Quaternion::from_euler_rotation(gyro.getGyroY_rads()*dt, gyro.getGyroX_rads()*dt, -1*gyro.getGyroZ_rads()*dt) * orientation;
+  // }
+  // lastTime = micros();
 
   realPacket data = {0xBEEF, (micros()-offset), 0, accel.getAccelZ_mss() + accxOffset, accel.getAccelY_mss() + accyOffset, accel.getAccelX_mss() + acczOffset,
                       gyro.getGyroZ_rads(), gyro.getGyroY_rads(), gyro.getGyroX_rads(), alt.filterIn(baro.readAltitudeM()),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
 
-  
-  // x y z
-  float am[3] = {data.accx, data.accy, data.accz};
-  float wm[3] = {data.avelx, data.avely, data.avelz};
-  float q[4];
-  
-  updateIMU(am, wm, (micros()-previousTime) / 1000000.0);
-  previousTime = micros();
-  get_q(q);
-  
-  auto quat = Quaternion();
-  quat.a = q[0];
-  quat.b = q[1];
-  quat.c = q[2];
-  quat.d = q[3];
-  
-  auto acc = Quaternion(data.accx, data.accy, data.accz);
-  acc.a = 0;
-
-  auto vec = quat.rotate(acc) + Quaternion(0, 0, -9.81);
-
-
-  double delta = ((double) (micros() - intTime)) / 1000000;
-  if ((micros() - offset) <= 5000000) {
-    lVelX = vec.b;
-    lVelY = vec.c;
-    lVelZ = vec.d;
-    lPosX = velX;
-    lPosY = velY;
-    lPosZ = velZ;
-  } else {
-    vec.b = accx.filterIn(vec.b);
-    if (abs(vec.b) > 0.05) {
-      velX += delta * (lVelX + (vec.b - lVelX)/2.0);
-    }
-    vec.c = accy.filterIn(vec.c);
-    if (abs(vec.c) > 0.05) {
-      velY += delta * (lVelY + (vec.c - lVelY)/2.0);
-    }
-    vec.d = accz.filterIn(vec.d);
-    if (abs(vec.d) > 0.05) {
-      velZ += delta * (lVelZ + (vec.d - lVelZ)/2.0);
-    }
-
-    if (abs(velX) > 0.1) {
-      posX += delta * (lPosZ + (velX - lPosZ)/2.0);
-    }
-    if (abs(velY) > 0.1) {
-      posY += delta * (lPosZ + (velY - lPosZ)/2.0);
-    }
-    if (abs(velZ) > 0.1) {
-      posZ += delta * (lPosZ + (velZ - lPosZ)/2.0);
-    }
-
-    lVelX = vec.b;
-    lVelY = vec.c;
-    lVelZ = vec.d;
-    lPosX = velX;
-    lPosY = velY;
-    lPosZ = velZ;
-
-    Serial.printf("ACCEL x: %f   y: %f    z: %f", vec.b, vec.c, vec.d);
-    Serial.println();
-    Serial.printf("VELOC x: %f   y: %f    z: %f", velX, velY, velZ);
-    Serial.println();
-    Serial.printf("POSIT x: %f   y: %f    z: %f", posX, posY, posZ);
-    Serial.println();
-  }
-
-  intTime = micros();
-  
-
-  data.w = q[0];
-  data.x = q[1];
-  data.y = q[2];
-  data.z = q[3];
-
-
+  Quaternion groundToSensorFrame = orientation.conj();
+  data.w = groundToSensorFrame.a;
+  data.x = groundToSensorFrame.b;
+  data.y = groundToSensorFrame.c;
+  data.z = groundToSensorFrame.d;
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
   if (file) {
     file.print(data.time); file.print(","); file.print(data.code); file.print(","); file.print(data.accx); file.print(","); file.print(data.accy); file.print(","); file.print(data.accz); file.print(",");
     file.print(data.avelx); file.print(","); file.print(data.avely); file.print(","); file.print(data.avelz); file.print(","); file.print(data.altitude); file.print(","); file.print(data.pressure); file.print(",");
-    file.print(data.temp); file.print(" ,"); file.print(data.w); file.print(","); file.print(data.x); file.print(","); file.print(data.y); file.print(","); file.print(data.z); file.print(",");
+    file.print(data.temp); file.print(","); file.print(data.w); file.print(","); file.print(data.x); file.print(","); file.print(data.y); file.print(","); file.print(data.z); file.print(",");
     file.print(data.checksum); file.println(",");
   } else {
     data.code = -1;
   }
+
   if (count % 10 == 0) {
-    //Serial.write((const uint8_t *)&data, sizeof(data));
-    //Serial3.write((const uint8_t *)&data, sizeof(data));
+    Serial.write((const uint8_t *)&data, sizeof(data));
+    Serial3.write((const uint8_t *)&data, sizeof(data));
 
     file.close();
     file = sd.open(fileName, FILE_WRITE);
