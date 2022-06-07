@@ -241,7 +241,7 @@ void loop() {
   Vec3 mag(magData.x,magData.y,magData.z);
 
   gyro.readSensor();
-  Vec3 gyr = Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
+  Vec3 gyr = Vec3(gyro.getGyroY_rads(),gyro.getGyroX_rads(),gyro.getGyroZ_rads());
 
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
@@ -270,6 +270,13 @@ void loop() {
   data.x = groundToSensorFrame.b;
   data.y = groundToSensorFrame.c;
   data.z = groundToSensorFrame.d;
+
+  data.accx = thisahrs.aglobal.b;
+  data.accy = thisahrs.aglobal.c;
+  data.accz = thisahrs.aglobal.d;
+
+  //Serial.printf("(%f, %f, %f)\n", data.accx, data.accy, data.accz);
+  
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
