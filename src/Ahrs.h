@@ -10,7 +10,7 @@ class Ahrs{
     public:
         double cornerFrequency = 0.05;
 
-        double wmin = 4 * (PI/180); //threshold under which the gyro is considered stationary
+        double wmin = 4; //threshold under which the gyro is considered stationary
         double tb = 2; //time threshold after which we activate gyro bias compensation
         Vec3 fb;//time spent moving
 
@@ -18,8 +18,8 @@ class Ahrs{
         double grange = 0.1;
         double fa = 0;
 
-        double Knorm = 7.50;
-        double Kinit = 20;
+        double Knorm = 0.5;
+        double Kinit = 15;
         double tinit = 3;
 
         Quaternion q = Quaternion();

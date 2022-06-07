@@ -184,34 +184,34 @@ void setup() {
   bmm150.setRate(BMM150_DATA_RATE_10HZ);
   bmm150.setMeasurementXYZ();
 
-  if (!sd.begin(SdioConfig(FIFO_SDIO))) {
-      Serial.println("SD Begin Failed");
-  }
-  Serial.println("\nFIFO SDIO mode.");
-    while (sd.exists(fileName)) {
-      if (fileName[BASE_NAME_SIZE + 1] != '9') {
-        fileName[BASE_NAME_SIZE + 1]++;
-      } else if (fileName[BASE_NAME_SIZE] != '9') {
-        fileName[BASE_NAME_SIZE + 1] = '0';
-        fileName[BASE_NAME_SIZE]++;
-      } else if (fileName[BASE_NAME_SIZE] != '9') {
-        fileName[BASE_NAME_SIZE + 1] = '0';
-        fileName[BASE_NAME_SIZE]++;
-      } else {
-        Serial.println("Can't create file name");
-        // realPacket data;
-        // data.code = -1;
+  // if (!sd.begin(SdioConfig(FIFO_SDIO))) {
+  //     Serial.println("SD Begin Failed");
+  // }
+  // Serial.println("\nFIFO SDIO mode.");
+  //   while (sd.exists(fileName)) {
+  //     if (fileName[BASE_NAME_SIZE + 1] != '9') {
+  //       fileName[BASE_NAME_SIZE + 1]++;
+  //     } else if (fileName[BASE_NAME_SIZE] != '9') {
+  //       fileName[BASE_NAME_SIZE + 1] = '0';
+  //       fileName[BASE_NAME_SIZE]++;
+  //     } else if (fileName[BASE_NAME_SIZE] != '9') {
+  //       fileName[BASE_NAME_SIZE + 1] = '0';
+  //       fileName[BASE_NAME_SIZE]++;
+  //     } else {
+  //       Serial.println("Can't create file name");
+  //       // realPacket data;
+  //       // data.code = -1;
         
-        return;
-      }
-  }
-  file = sd.open(fileName, FILE_WRITE);
-  if (!file) {
-    Serial.println(F("open failed."));
-    return;
-  }
-  Serial.print(F("opened: "));
-  Serial.println(fileName);
+  //       return;
+  //     }
+  // }
+  // file = sd.open(fileName, FILE_WRITE);
+  // if (!file) {
+  //   Serial.println(F("open failed."));
+  //   return;
+  // }
+  // Serial.print(F("opened: "));
+  // Serial.println(fileName);
 
   Serial.println("Starting ...");
 }
@@ -235,13 +235,13 @@ void loop() {
   /* read the accel */
   accel.readSensor();
   /* print the data */
-  Vec3 acc = Vec3(accel.getAccelY_mss(),accel.getAccelX_mss(),accel.getAccelZ_mss());
+  Vec3 acc = Vec3(accel.getAccelX_mss(),accel.getAccelY_mss(),accel.getAccelZ_mss());
 
   sBmm150MagData_t magData = bmm150.getGeomagneticData();
   Vec3 mag(magData.x,magData.y,magData.z);
 
   gyro.readSensor();
-  Vec3 gyr = Vec3(gyro.getGyroY_rads(),gyro.getGyroX_rads(),gyro.getGyroZ_rads());
+  Vec3 gyr = Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
 
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
@@ -280,21 +280,21 @@ void loop() {
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
-  if (file) {
-    file.print(data.time); file.print(","); file.print(data.code); file.print(","); file.print(data.accx); file.print(","); file.print(data.accy); file.print(","); file.print(data.accz); file.print(",");
-    file.print(data.avelx); file.print(","); file.print(data.avely); file.print(","); file.print(data.avelz); file.print(","); file.print(data.altitude); file.print(","); file.print(data.pressure); file.print(",");
-    file.print(data.temp); file.print(","); file.print(data.w); file.print(","); file.print(data.x); file.print(","); file.print(data.y); file.print(","); file.print(data.z); file.print(",");
-    file.print(data.checksum); file.println(",");
-  } else {
-    data.code = -1;
-  }
+  // if (file) {
+  //   file.print(data.time); file.print(","); file.print(data.code); file.print(","); file.print(data.accx); file.print(","); file.print(data.accy); file.print(","); file.print(data.accz); file.print(",");
+  //   file.print(data.avelx); file.print(","); file.print(data.avely); file.print(","); file.print(data.avelz); file.print(","); file.print(data.altitude); file.print(","); file.print(data.pressure); file.print(",");
+  //   file.print(data.temp); file.print(","); file.print(data.w); file.print(","); file.print(data.x); file.print(","); file.print(data.y); file.print(","); file.print(data.z); file.print(",");
+  //   file.print(data.checksum); file.println(",");
+  // } else {
+  //   data.code = -1;
+  // }
 
   if (count % 10 == 0) {
     Serial.write((const uint8_t *)&data, sizeof(data));
     Serial3.write((const uint8_t *)&data, sizeof(data));
 
-    file.close();
-    file = sd.open(fileName, FILE_WRITE);
+    // file.close();
+    // file = sd.open(fileName, FILE_WRITE);
   }
 
   count += 1;
