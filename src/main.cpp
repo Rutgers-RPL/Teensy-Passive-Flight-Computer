@@ -238,7 +238,7 @@ void loop() {
   Vec3 acc = Vec3(accel.getAccelX_mss(),accel.getAccelY_mss(),accel.getAccelZ_mss());
 
   sBmm150MagData_t magData = bmm150.getGeomagneticData();
-  Vec3 mag(magData.x,magData.y,magData.z);
+  Vec3 mag(magData.y,magData.x,-1*magData.z);
 
   gyro.readSensor();
   Vec3 gyr = Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
@@ -265,7 +265,7 @@ void loop() {
                       gyro.getGyroZ_rads(), gyro.getGyroY_rads(), gyro.getGyroX_rads(), alt.filterIn(baro.readAltitudeM()),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
 
-  Quaternion groundToSensorFrame = orientation.conj();
+  Quaternion groundToSensorFrame = orientation;
   data.w = groundToSensorFrame.a;
   data.x = groundToSensorFrame.b;
   data.y = groundToSensorFrame.c;
