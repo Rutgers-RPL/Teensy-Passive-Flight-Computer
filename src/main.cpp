@@ -8,6 +8,7 @@
 #include <Quaternion.h>
 #include <Vec3.h>
 #include <Ahrs.h>
+#include <Senors.h>
 
 #define _g_ (9.80665)
 
@@ -143,46 +144,49 @@ Quaternion dcm2quat(Vec3 north, Vec3 east, Vec3 down){
 }
 
 Ahrs thisahrs;
+Sensors sen;
 
 void setup() {
-  int status;
   Serial.begin(9600);
   Serial3.begin(9600);
   //while(!Serial) {}
   while(!Serial3) {}
   Serial3.flush();
-  /* start the sensors */
-  status = accel.begin();
-  if (status < 0) {
-    Serial.println("Accel Initialization Error");
-    Serial.println(status);
-    while (1) {}
-  }
-  status = gyro.begin();
-  if (status < 0) {
-    Serial.println("Gyro Initialization Error");
-    Serial.println(status);
-    while (1) {}
-  }
-  status = baro.begin();
-  if (status < 0) {
-    if(ERR_DATA_BUS == status) {
-      Serial.println("Data bus error!!!");
-    }else if(ERR_IC_VERSION == status){
-      Serial.println("Chip versions do not match!!!");
-    }
-    while (1) {}
-  }
-  while(!baro.setSamplingMode(baro.eUltraPrecision)){
-    Serial.println("Set samping mode fail, retrying....");
-    delay(1000);
-  }
 
-  bmm150.begin();
-  bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
-  bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
-  bmm150.setRate(BMM150_DATA_RATE_10HZ);
-  bmm150.setMeasurementXYZ();
+  sen = Sensors();
+
+  // /* start the sensors */
+  // status = accel.begin();
+  // if (status < 0) {
+  //   Serial.println("Accel Initialization Error");
+  //   Serial.println(status);
+  //   while (1) {}
+  // }
+  // status = gyro.begin();
+  // if (status < 0) {
+  //   Serial.println("Gyro Initialization Error");
+  //   Serial.println(status);
+  //   while (1) {}
+  // }
+  // status = baro.begin();
+  // if (status < 0) {
+  //   if(ERR_DATA_BUS == status) {
+  //     Serial.println("Data bus error!!!");
+  //   }else if(ERR_IC_VERSION == status){
+  //     Serial.println("Chip versions do not match!!!");
+  //   }
+  //   while (1) {}
+  // }
+  // while(!baro.setSamplingMode(baro.eUltraPrecision)){
+  //   Serial.println("Set samping mode fail, retrying....");
+  //   delay(1000);
+  // }
+
+  // bmm150.begin();
+  // bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
+  // bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
+  // bmm150.setRate(BMM150_DATA_RATE_10HZ);
+  // bmm150.setMeasurementXYZ();
 
   // if (!sd.begin(SdioConfig(FIFO_SDIO))) {
   //     Serial.println("SD Begin Failed");
@@ -233,15 +237,13 @@ void loop() {
   }
 
   /* read the accel */
-  accel.readSensor();
-  /* print the data */
-  Vec3 acc = Vec3(accel.getAccelX_mss(),accel.getAccelY_mss(),accel.getAccelZ_mss());
+  Vec3 acc = sen.readAccel();
 
-  sBmm150MagData_t magData = bmm150.getGeomagneticData();
-  Vec3 mag(magData.y,magData.x,-1*magData.z);
+  /* read the mag */
+  Vec3 mag = sen.readMag();
 
-  gyro.readSensor();
-  Vec3 gyr = Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
+  /* read the gyr */
+  Vec3 gyr = sen.readGyro();
 
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
