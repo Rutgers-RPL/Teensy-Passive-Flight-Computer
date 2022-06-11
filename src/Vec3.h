@@ -43,6 +43,15 @@ class Vec3{
         Vec3 operator + (const Vec3& a){
             return Vec3(x+a.x,y+a.y,z+a.z);
         }
+        Vec3 operator += (const Vec3& a){
+            return Vec3(x+a.x,y+a.y,z+a.z);
+        }
+        Vec3 operator -= (const Vec3& a){
+            return Vec3(x-a.x,y-a.y,z-a.z);
+        }
+        Vec3 operator *= (const double& s){ 
+            return Vec3(x + x * s,y + y * s,z + z * s); 
+        }
 };
 
 double angleBetweenVec3(Vec3 a,Vec3 b){
