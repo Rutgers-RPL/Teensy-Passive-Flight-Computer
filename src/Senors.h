@@ -28,7 +28,8 @@ class Sensors{
             short z = readShort(4);
 
             rot = Quaternion::from_euler_rotation(x, y, z);
-            
+            rot.d = -1;
+
             int status;
             status = accel.begin();
             if (status < 0) {
@@ -59,7 +60,7 @@ class Sensors{
             bmm150.begin();
             bmm150.setOperationMode(BMM150_POWERMODE_NORMAL);
             bmm150.setPresetMode(BMM150_PRESETMODE_HIGHACCURACY);
-            bmm150.setRate(BMM150_DATA_RATE_10HZ);
+            bmm150.setRate(BMM150_DATA_RATE_30HZ);
             bmm150.setMeasurementXYZ();
 
             Serial.println("Sensor initialization complete...");
@@ -72,18 +73,17 @@ class Sensors{
             return Vec3(accel.getAccelX_mss(),accel.getAccelY_mss(),accel.getAccelZ_mss());
         }
 
+        Vec3 readGyro(){
+            gyro.readSensor();
+            return Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
+        }
+
         Vec3 readMag(){
             sBmm150MagData_t magData = bmm150.getGeomagneticData();
             Quaternion q(magData.x, magData.y, magData.z);
             q = rot.rotate(q);
             return Vec3(q.b, q.c, q.d);
         }
-
-        Vec3 readGyro(){
-            gyro.readSensor();
-            return Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
-        }
-
 
     private:
 

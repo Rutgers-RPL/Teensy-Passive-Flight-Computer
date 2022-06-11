@@ -95,19 +95,22 @@ class Ahrs{
             Vec3 ea = ahat.cross(Vec3(2*(q.b*q.d)-2*(q.a*q.c),
                                   2*(q.c*q.d)+2*(q.a*q.b),
                                   2*pow(q.a,2)-1+2*pow(q.d,2)));
-
+            ea.normalize();
             Vec3 em = acc.cross(mag);
-            em.normalize();
             em=em.cross(Vec3(2*(q.b*q.c)+2*(q.a*q.d),
                          2*pow(q.a,2)-1+2*pow(q.c,2),
                          2*(q.c*q.d)-2*(q.a*q.b)));
+            em.normalize();
 
             Vec3 e(0,0,0);
             if(acc.magnitude() > 0 && mag.magnitude() > 0){
                 e = ea + em;
+                //e.normalize();
                 //Serial.printf("ea: %f, %f, %f em: %f, %f, %f\n", ea.x, ea.y, ea.z, em.x, em.y, em.z);
-            }else if(acc.magnitude() > 0)
+            }else if(acc.magnitude() > 0) {
                 e = ea;
+                //e.normalize();
+            }
             return e;
         }
 

@@ -1,7 +1,4 @@
 #include <Arduino.h>
-#include <BMI085.h>
-#include <DFRobot_BMP3XX.h>
-#include <DFRobot_BMM150.h>
 #include <SdFat.h>
 #include <FastCRC.h>
 #include <filters.h>
@@ -22,6 +19,9 @@ typedef struct {
   float avelx;
   float avely;
   float avelz;
+  float magx;
+  float magy;
+  float magz;
   float altitude;
   float pressure;
   float temp;
@@ -48,15 +48,6 @@ Filter avelx(acutoff_freq, sampling_time, order);
 Filter avely(acutoff_freq, sampling_time, order);
 Filter avelz(acutoff_freq, sampling_time, order);
 Filter alt(cutoff_freq, sampling_time, order);
-
-/* accel object */
-Bmi085Accel accel(Wire,0x18);
-/* gyro object */
-Bmi085Gyro gyro(Wire,0x68);
-/* baro object */
-DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
-/*mag*/
-DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
 SdFs sd;
 FsFile file;
@@ -263,8 +254,8 @@ void loop() {
   // }
   // lastTime = micros();
 
-  realPacket data = {0xBEEF, (micros()-offset), 0, accel.getAccelZ_mss() + accxOffset, accel.getAccelY_mss() + accyOffset, accel.getAccelX_mss() + acczOffset,
-                      gyro.getGyroZ_rads(), gyro.getGyroY_rads(), gyro.getGyroX_rads(), alt.filterIn(baro.readAltitudeM()),  baro.readPressPa(),
+  realPacket data = {0xBEEF, (micros()-offset), 0, acc.x, acc.y, acc.z,
+                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, alt.filterIn(baro.readAltitudeM()),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
 
   Quaternion groundToSensorFrame = orientation;
