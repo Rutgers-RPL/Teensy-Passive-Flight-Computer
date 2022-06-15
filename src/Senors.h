@@ -6,6 +6,7 @@
 #include <DFRobot_BMM150.h>
 #include <Quaternion.h>
 #include <Vec3.h>
+#include <Mat3x3.h>
 #include <EEPROM.h>
 
 
@@ -18,9 +19,13 @@ DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
 /*mag*/
 DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
+
 class Sensors{
     public:
         Quaternion rot;
+
+        Mat3x3 M;
+        Vec3 b;
 
         Sensors(){
             short x = readShort(0);

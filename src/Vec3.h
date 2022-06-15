@@ -1,6 +1,9 @@
 #ifndef Vec3_H
 #define Vec3_H
-#include <Arduino.h>
+#include "math.h"
+
+const double PI = 3.1415926535897932384626433832795028841971693993751058209;
+
 class Vec3{
     public:
         double x;
