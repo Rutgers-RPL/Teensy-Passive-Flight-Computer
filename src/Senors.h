@@ -8,7 +8,7 @@
 #include <Vec3.h>
 #include <Mat3x3.h>
 #include <EEPROM.h>
-
+#include <filters.h>
 
 /* accel object */
 Bmi085Accel accel(Wire,0x18);
@@ -16,8 +16,17 @@ Bmi085Accel accel(Wire,0x18);
 Bmi085Gyro gyro(Wire,0x68);
 /* baro object */
 DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
-/*mag*/
+/* mag object*/
 DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
+
+const float cutoff_freq = 20.0;
+const float sampling_time = 0.05;
+IIR::ORDER order = IIR::ORDER::OD3;
+
+
+Filter accelFilter(cutoff_freq, sampling_time, order);
+
+
 
 
 class Sensors{
@@ -78,9 +87,17 @@ class Sensors{
             return Vec3(accel.getAccelX_mss(),accel.getAccelY_mss(),accel.getAccelZ_mss());
         }
 
+        Vec3 readFilteredAccel(){
+
+        }
+
         Vec3 readGyro(){
             gyro.readSensor();
             return Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
+        }
+
+        Vec3 readFilteredGyro(){
+
         }
 
         Vec3 readMag(){
@@ -88,6 +105,10 @@ class Sensors{
             Quaternion q(magData.x, magData.y, magData.z);
             q = rot.rotate(q);
             return Vec3(q.b, q.c, q.d);
+        }
+
+        Vec3 readFilteredMag(){
+            
         }
 
     private:
