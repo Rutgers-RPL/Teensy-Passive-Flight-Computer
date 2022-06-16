@@ -10,6 +10,9 @@
 #define _g_ (9.80665)
 
 typedef struct {
+  byte delim;
+  short size;
+  byte frametype;
   short magic;
   int code;
   float time;
@@ -30,6 +33,7 @@ typedef struct {
   float y;
   float z;
   unsigned int checksum;
+  byte digichecksum;
 } __attribute__((packed)) realPacket;
 
 const float accxOffset = 0;
@@ -254,7 +258,7 @@ void loop() {
   // }
   // lastTime = micros();
 
-  realPacket data = {0xBEEF, (micros()-offset), 0, acc.x, acc.y, acc.z,
+  realPacket data = {0x7E, 78, 17, 0xBEEF, (micros()-offset), 0, acc.x, acc.y, acc.z,
                       gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, alt.filterIn(baro.readAltitudeM()),  baro.readPressPa(),
                       (accel.getTemperature_C() + baro.readTempC()) / 2};
 
@@ -270,7 +274,15 @@ void loop() {
 
   //Serial.printf("(%f, %f, %f)\n", data.accx, data.accy, data.accz);
   
+  byte cs = 0;
+  byte* packet = (byte*) &data;
 
+  for(int i = 0; i < 83; i++)
+  {
+    cs += packet[i];
+  }
+
+  data.digichecksum = cs;
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
   // if (file) {
