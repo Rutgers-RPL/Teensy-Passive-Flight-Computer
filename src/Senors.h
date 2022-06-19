@@ -1,6 +1,7 @@
 #ifndef Sensors_H
 #define Sensors_H
 #include <Arduino.h>
+#include <SdFat.h>
 #include <BMI085.h>
 #include <DFRobot_BMP3XX.h>
 #include <DFRobot_BMM150.h>
@@ -9,6 +10,11 @@
 #include <Mat3x3.h>
 #include <EEPROM.h>
 #include <filters.h>
+#include <string.h>
+
+#define FILE_BASE_NAME "FlightLog_"
+const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
+char fileName[] = FILE_BASE_NAME "0000.rpl";
 
 /* accel object */
 Bmi085Accel accel(Wire,0x18);
@@ -19,19 +25,24 @@ DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
 /* mag object*/
 DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
-const float accel_cf = 20.0;
-const float gyro_cf = 20.0;
-const float mag_cf = 20.0;
-const float baro_cf = 20.0;
+const uint8_t batteryPin = 22;
 
 const float sampling_time = 0.05;
 IIR::ORDER order = IIR::ORDER::OD3;
 
+const float accel_cf = 20.0;
+const float gyro_cf = 20.0;
+const float mag_cf = 20.0;
+const float pressure_cf = 20.0;
+const float altitude_cf = 20.0;
+const float temperature_cf = 20.0;
 
 Filter accelFilter(accel_cf, sampling_time, order);
-
-
-
+Filter gyroFilter(gyro_cf, sampling_time, order);
+Filter magFilter(mag_cf, sampling_time, order);
+Filter pressureFilter(pressure_cf, sampling_time, order);
+Filter altitudeFilter(altitude_cf, sampling_time, order);
+Filter temperatureFilter(temperature_cf, sampling_time, order);
 
 class Sensors{
     public:
@@ -39,6 +50,8 @@ class Sensors{
 
         Mat3x3 M;
         Vec3 b;
+
+        SdFs sd;
 
         Sensors(){
             short x = readShort(0);
@@ -92,7 +105,7 @@ class Sensors{
         }
 
         Vec3 readFilteredAccel(){
-
+            
         }
 
         Vec3 readGyro(){
@@ -119,13 +132,68 @@ class Sensors{
             return baro.readPressPa();
         }
 
+        float readFilteredPressure(){
+
+        }
+
         float readAltitude(){
             return baro.readAltitudeM();
+        }
+
+        float readFilteredAltitude(){
+
         }
 
         float readTemperature(){
             return (baro.readTempC() + accel.getTemperature_C()) / 2.0;
         }
+
+        float readFilteredTemperature(){
+
+        }
+
+        float readVoltage(){
+            return analogRead(batteryPin) * 4.125;
+        }
+
+        float readFilteredVoltage(){
+
+        }
+
+        FsFile beginSD() {
+            if (!sd.begin(SdioConfig(FIFO_SDIO))) {
+                Serial.println("SD Begin Failed");
+            }
+            Serial.println("\nFIFO SDIO mode.");
+                while (sd.exists(fileName)) {
+                    if (fileName[BASE_NAME_SIZE + 3] != '9') {
+                        fileName[BASE_NAME_SIZE + 3]++;
+                    } else if (fileName[BASE_NAME_SIZE + 2] != '9') {
+                        fileName[BASE_NAME_SIZE + 3] = '0';
+                        fileName[BASE_NAME_SIZE + 2]++;
+                    } else if (fileName[BASE_NAME_SIZE + 1] != '9') {
+                        fileName[BASE_NAME_SIZE + 2] = '0';
+                        fileName[BASE_NAME_SIZE + 3] = '0';
+                        fileName[BASE_NAME_SIZE + 1]++;
+                    } else if (fileName[BASE_NAME_SIZE] != '9') {
+                        fileName[BASE_NAME_SIZE + 1] = '0';
+                        fileName[BASE_NAME_SIZE + 2] = '0';
+                        fileName[BASE_NAME_SIZE + 3] = '0';
+                        fileName[BASE_NAME_SIZE]++;
+                    } else {
+                        Serial.println("Can't create file name");
+                    }
+            }
+
+            FsFile f = sd.open(fileName, FILE_WRITE);
+            Serial.println(fileName);
+            if (!f) {
+                Serial.println("Failed opening file.");
+            }
+
+            return f;
+        }
+
 
     private:
 
@@ -193,7 +261,6 @@ class Sensors{
             output.normalize();
             return output;
         }
-
 
 };
 

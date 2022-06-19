@@ -13,6 +13,7 @@ typedef struct {
   byte delim;
   float time;
   int code;
+  float voltage;
   float accx;
   float accy;
   float accz;
@@ -32,9 +33,6 @@ typedef struct {
   unsigned int checksum;
 } __attribute__((packed)) realPacket;
 
-SdFs sd;
-FsFile file;
-
 FastCRC32 CRC32;
 
 unsigned long offset = 0;
@@ -42,9 +40,6 @@ unsigned long previousTime = 0;
 
 double am[3];
 double wm[3];
-#define FILE_BASE_NAME "Data_"
-const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
-char fileName[] = FILE_BASE_NAME "00.csv";
 int count;
 int start;
 
@@ -54,16 +49,15 @@ bool ledOn;
 
 Ahrs thisahrs;
 Sensors sen;
+FsFile f;
+SdFs sd;
 
 void setup() {
   Serial.begin(9600);
   Serial3.begin(9600);
-  //while(!Serial) {}
   while(!Serial3) {}
   Serial3.flush();
-
-  sen = Sensors();
-
+  FsFile f = sen.beginSD();
   Serial.println("Starting ...");
 }
 
@@ -93,21 +87,16 @@ void loop() {
   Vec3 gyr = sen.readGyro();
 
   thisahrs.update(acc,gyr,mag);
-  orientation = thisahrs.q;
+  Quaternion groundToSensorFrame = thisahrs.q;
 
-  Quaternion groundToSensorFrame = orientation;
-
-  realPacket data = {0x7E, (micros()-offset), 0, thisahrs.aglobal.b, thisahrs.aglobal.c, thisahrs.aglobal.d,
-                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, baro.readAltitudeM(), (accel.getTemperature_C() + baro.readTempC()) / 2.0,
+  realPacket data = {0x7E, (micros()-offset), 0, sen.readVoltage(), thisahrs.aglobal.b, thisahrs.aglobal.c, thisahrs.aglobal.d,
+                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, sen.readAltitude(), sen.readTemperature(),
                       groundToSensorFrame.a, groundToSensorFrame.b, groundToSensorFrame.c, groundToSensorFrame.d};
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
-  if (file) {
-    file.print(data.time); file.print(","); file.print(data.code); file.print(","); file.print(data.accx); file.print(","); file.print(data.accy); file.print(","); file.print(data.accz); file.print(",");
-    file.print(data.avelx); file.print(","); file.print(data.avely); file.print(","); file.print(data.avelz); file.print(","); file.print(data.altitude); file.print(","); file.print(data.pressure); file.print(",");
-    file.print(data.temp); file.print(","); file.print(data.w); file.print(","); file.print(data.x); file.print(","); file.print(data.y); file.print(","); file.print(data.z); file.print(",");
-    file.print(data.checksum); file.println(",");
+  if (f) {
+    f.write((const uint8_t *)&data, sizeof(data));
   } else {
     data.code = -1;
   }
