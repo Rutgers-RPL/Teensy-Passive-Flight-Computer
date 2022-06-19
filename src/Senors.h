@@ -19,12 +19,16 @@ DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
 /* mag object*/
 DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
-const float cutoff_freq = 20.0;
+const float accel_cf = 20.0;
+const float gyro_cf = 20.0;
+const float mag_cf = 20.0;
+const float baro_cf = 20.0;
+
 const float sampling_time = 0.05;
 IIR::ORDER order = IIR::ORDER::OD3;
 
 
-Filter accelFilter(cutoff_freq, sampling_time, order);
+Filter accelFilter(accel_cf, sampling_time, order);
 
 
 
@@ -109,6 +113,18 @@ class Sensors{
 
         Vec3 readFilteredMag(){
             
+        }
+
+        float readPressure(){
+            return baro.readPressPa();
+        }
+
+        float readAltitude(){
+            return baro.readAltitudeM();
+        }
+
+        float readTemperature(){
+            return (baro.readTempC() + accel.getTemperature_C()) / 2.0;
         }
 
     private:

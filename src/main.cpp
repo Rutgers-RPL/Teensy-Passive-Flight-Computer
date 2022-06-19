@@ -11,11 +11,8 @@
 
 typedef struct {
   byte delim;
-  short size;
-  byte frametype;
-  short magic;
-  int code;
   float time;
+  int code;
   float accx;
   float accy;
   float accz;
@@ -33,7 +30,6 @@ typedef struct {
   float y;
   float z;
   unsigned int checksum;
-  byte digichecksum;
 } __attribute__((packed)) realPacket;
 
 SdFs sd;
@@ -99,29 +95,12 @@ void loop() {
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
 
-  realPacket data = {0x7E, 78, 17, 0xBEEF, (micros()-offset), 0, acc.x, acc.y, acc.z,
-                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, baro.readAltitudeM(),  baro.readPressPa(),
-                      (accel.getTemperature_C() + baro.readTempC()) / 2};
-
   Quaternion groundToSensorFrame = orientation;
-  data.w = groundToSensorFrame.a;
-  data.x = groundToSensorFrame.b;
-  data.y = groundToSensorFrame.c;
-  data.z = groundToSensorFrame.d;
 
-  data.accx = thisahrs.aglobal.b;
-  data.accy = thisahrs.aglobal.c;
-  data.accz = thisahrs.aglobal.d;
-  
-  byte cs = 0;
-  byte* packet = (byte*) &data;
+  realPacket data = {0x7E, (micros()-offset), 0, thisahrs.aglobal.b, thisahrs.aglobal.c, thisahrs.aglobal.d,
+                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, baro.readAltitudeM(), (accel.getTemperature_C() + baro.readTempC()) / 2.0,
+                      groundToSensorFrame.a, groundToSensorFrame.b, groundToSensorFrame.c, groundToSensorFrame.d};
 
-  for(int i = 0; i < 83; i++)
-  {
-    cs += packet[i];
-  }
-
-  data.digichecksum = cs;
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
   if (file) {
