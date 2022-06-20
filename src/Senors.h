@@ -1,20 +1,13 @@
 #ifndef Sensors_H
 #define Sensors_H
 #include <Arduino.h>
-#include <SdFat.h>
 #include <BMI085.h>
 #include <DFRobot_BMP3XX.h>
 #include <DFRobot_BMM150.h>
 #include <Quaternion.h>
 #include <Vec3.h>
-#include <Mat3x3.h>
 #include <EEPROM.h>
-#include <filters.h>
-#include <string.h>
 
-#define FILE_BASE_NAME "FlightLog_"
-const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
-char fileName[] = FILE_BASE_NAME "0000.rpl";
 
 /* accel object */
 Bmi085Accel accel(Wire,0x18);
@@ -22,44 +15,19 @@ Bmi085Accel accel(Wire,0x18);
 Bmi085Gyro gyro(Wire,0x68);
 /* baro object */
 DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
-/* mag object*/
+/*mag*/
 DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
-
-const uint8_t batteryPin = 22;
-
-const float sampling_time = 0.05;
-IIR::ORDER order = IIR::ORDER::OD3;
-
-const float accel_cf = 20.0;
-const float gyro_cf = 20.0;
-const float mag_cf = 20.0;
-const float pressure_cf = 20.0;
-const float altitude_cf = 20.0;
-const float temperature_cf = 20.0;
-
-Filter accelFilter(accel_cf, sampling_time, order);
-Filter gyroFilter(gyro_cf, sampling_time, order);
-Filter magFilter(mag_cf, sampling_time, order);
-Filter pressureFilter(pressure_cf, sampling_time, order);
-Filter altitudeFilter(altitude_cf, sampling_time, order);
-Filter temperatureFilter(temperature_cf, sampling_time, order);
 
 class Sensors{
     public:
         Quaternion rot;
-
-        Mat3x3 M;
-        Vec3 b;
-
-        SdFs sd;
-        FsFile f;
 
         Sensors(){
             short x = readShort(0);
             short y = readShort(2);
             short z = readShort(4);
 
-            rot = Quaternion::from_euler_rotation(x, y, z);
+            rot = Quaternion::from_euler_rotation(0, 0, 0);
             rot.d = -1;
 
             int status;
@@ -105,17 +73,9 @@ class Sensors{
             return Vec3(accel.getAccelX_mss(),accel.getAccelY_mss(),accel.getAccelZ_mss());
         }
 
-        Vec3 readFilteredAccel(){
-            
-        }
-
         Vec3 readGyro(){
             gyro.readSensor();
             return Vec3(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
-        }
-
-        Vec3 readFilteredGyro(){
-
         }
 
         Vec3 readMag(){
@@ -125,74 +85,18 @@ class Sensors{
             return Vec3(q.b, q.c, q.d);
         }
 
-        Vec3 readFilteredMag(){
-            
-        }
-
-        float readPressure(){
-            return baro.readPressPa();
-        }
-
-        float readFilteredPressure(){
-
-        }
-
-        float readAltitude(){
-            return baro.readAltitudeM();
-        }
-
-        float readFilteredAltitude(){
-
-        }
-
-        float readTemperature(){
-            return (baro.readTempC() + accel.getTemperature_C()) / 2.0;
-        }
-
-        float readFilteredTemperature(){
-
-        }
-
-        float readVoltage(){
-            return (3.07 * ((double) analogRead(batteryPin) / 1023.0));
-        }
-
-        float readFilteredVoltage(){
-
-        }
-
-        void beginSD() {
-            if (!sd.begin(SdioConfig(FIFO_SDIO))) {
-                Serial.println("SD Begin Failed");
+        float getCompassDegree(){
+            float compass = 0.0;
+            Vec3 mag = readMag();
+            compass = atan2(mag.x, mag.y);
+            if (compass < 0) {
+                compass += 2 * PI;
             }
-            Serial.println("\nFIFO SDIO mode.");
-                while (sd.exists(fileName)) {
-                    if (fileName[BASE_NAME_SIZE + 3] != '9') {
-                        fileName[BASE_NAME_SIZE + 3]++;
-                    } else if (fileName[BASE_NAME_SIZE + 2] != '9') {
-                        fileName[BASE_NAME_SIZE + 3] = '0';
-                        fileName[BASE_NAME_SIZE + 2]++;
-                    } else if (fileName[BASE_NAME_SIZE + 1] != '9') {
-                        fileName[BASE_NAME_SIZE + 2] = '0';
-                        fileName[BASE_NAME_SIZE + 3] = '0';
-                        fileName[BASE_NAME_SIZE + 1]++;
-                    } else if (fileName[BASE_NAME_SIZE] != '9') {
-                        fileName[BASE_NAME_SIZE + 1] = '0';
-                        fileName[BASE_NAME_SIZE + 2] = '0';
-                        fileName[BASE_NAME_SIZE + 3] = '0';
-                        fileName[BASE_NAME_SIZE]++;
-                    } else {
-                        Serial.println("Can't create file name");
-                    }
+            if (compass > 2 * PI) {
+                compass -= 2 * PI;
             }
-
-            f = sd.open(fileName, FILE_WRITE);
-            Serial.println(fileName);
-            if (!f) {
-                Serial.println("Failed opening file.");
-            }
+            return compass * 180 / M_PI;
         }
-
 
     private:
 
@@ -208,6 +112,59 @@ class Sensors{
             EEPROM.write(address, data>>8);
             EEPROM.write(address+1, (data<<8)>>8);
         }
+
+        Quaternion dcm2quat(Vec3 north, Vec3 east, Vec3 down){
+            // dcm2quat https://intra.ece.ucr.edu/~farrell/AidedNavigation/D_App_Quaternions/Rot2Quat.pdf
+            int maximum = 1;
+            double q = (1+north.x+east.y+down.z);
+            double o = (1+north.x-east.y-down.z);
+            if (o > q){
+                q = o;
+                maximum = 2;
+            }
+            o = (1-north.x+east.y-down.z);
+            if (o > q){
+                q = o;
+                maximum = 3;
+            }
+            o = (1-north.x-east.y+down.z);
+            if (o > q){
+                q = o;
+                maximum = 4;
+            }
+
+            Quaternion output = Quaternion();
+            switch(maximum){
+                case 1:
+                output.a = 0.5*sqrt(q);
+                output.b = (down.y-east.z)/(4*output.a);
+                output.c = (north.z-down.x)/(4*output.a);
+                output.d = (east.x-north.y)/(4*output.a);
+                break;
+                case 2:
+                output.b = 0.5*sqrt(q);
+                output.a = (down.y-east.z)/(4*output.b);
+                output.c = (north.y+east.x)/(4*output.b);
+                output.d = (north.z+down.x)/(4*output.b);
+                break;
+                case 3:
+                output.c = 0.5*sqrt(q);
+                output.a = (north.z-down.x)/(4*output.c);
+                output.b = (north.y+east.x)/(4*output.c);
+                output.d = (east.z+down.y)/(4*output.c);
+                break;
+                case 4:
+                output.d = 0.5*sqrt(q);
+                output.a = (east.x-north.y)/(4*output.d);
+                output.b = (north.z+down.x)/(4*output.d);
+                output.c = (east.z+down.y)/(4*output.d);
+                break;
+            }
+
+            output.normalize();
+            return output;
+        }
+
 
 };
 
