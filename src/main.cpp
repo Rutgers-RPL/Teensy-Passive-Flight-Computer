@@ -41,7 +41,6 @@ unsigned long previousTime = 0;
 double am[3];
 double wm[3];
 int count;
-int start;
 
 const int led = 13;
 long blinkCounter;
@@ -49,7 +48,6 @@ bool ledOn;
 
 Ahrs thisahrs;
 Sensors sen;
-FsFile f;
 SdFs sd;
 
 void setup() {
@@ -57,7 +55,11 @@ void setup() {
   Serial3.begin(9600);
   while(!Serial3) {}
   Serial3.flush();
-  FsFile f = sen.beginSD();
+  sen.beginSD();
+  if (!sen.f) {
+    Serial.println("Failed writing file");
+    while(1){};
+  }
   Serial.println("Starting ...");
 }
 
@@ -94,19 +96,20 @@ void loop() {
                       groundToSensorFrame.a, groundToSensorFrame.b, groundToSensorFrame.c, groundToSensorFrame.d};
 
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
-  
-  if (f) {
-    f.write((const uint8_t *)&data, sizeof(data));
+  if (sen.f) {
+    //f.write((const uint8_t *)&data, sizeof(data));
+    Serial.println(data.voltage);
+    sen.f.println(data.voltage);
   } else {
     data.code = -1;
   }
 
   if (count % 10 == 0) {
-    Serial.write((const uint8_t *)&data, sizeof(data));
-    Serial3.write((const uint8_t *)&data, sizeof(data));
+    //Serial.write((const uint8_t *)&data, sizeof(data));
 
-    // file.close();
-    // file = sd.open(fileName, FILE_WRITE);
+    Serial3.write((const uint8_t *)&data, sizeof(data));
+    sen.f.close();
+    sen.f = sen.sd.open(fileName, FILE_WRITE);
   }
 
   count += 1;

@@ -52,6 +52,7 @@ class Sensors{
         Vec3 b;
 
         SdFs sd;
+        FsFile f;
 
         Sensors(){
             short x = readShort(0);
@@ -153,14 +154,14 @@ class Sensors{
         }
 
         float readVoltage(){
-            return analogRead(batteryPin) * 4.125;
+            return (3.07 * ((double) analogRead(batteryPin) / 1023.0));
         }
 
         float readFilteredVoltage(){
 
         }
 
-        FsFile beginSD() {
+        void beginSD() {
             if (!sd.begin(SdioConfig(FIFO_SDIO))) {
                 Serial.println("SD Begin Failed");
             }
@@ -185,13 +186,11 @@ class Sensors{
                     }
             }
 
-            FsFile f = sd.open(fileName, FILE_WRITE);
+            f = sd.open(fileName, FILE_WRITE);
             Serial.println(fileName);
             if (!f) {
                 Serial.println("Failed opening file.");
             }
-
-            return f;
         }
 
 
@@ -208,58 +207,6 @@ class Sensors{
         {
             EEPROM.write(address, data>>8);
             EEPROM.write(address+1, (data<<8)>>8);
-        }
-
-        Quaternion dcm2quat(Vec3 north, Vec3 east, Vec3 down){
-            // dcm2quat https://intra.ece.ucr.edu/~farrell/AidedNavigation/D_App_Quaternions/Rot2Quat.pdf
-            int maximum = 1;
-            double q = (1+north.x+east.y+down.z);
-            double o = (1+north.x-east.y-down.z);
-            if (o > q){
-                q = o;
-                maximum = 2;
-            }
-            o = (1-north.x+east.y-down.z);
-            if (o > q){
-                q = o;
-                maximum = 3;
-            }
-            o = (1-north.x-east.y+down.z);
-            if (o > q){
-                q = o;
-                maximum = 4;
-            }
-
-            Quaternion output = Quaternion();
-            switch(maximum){
-                case 1:
-                output.a = 0.5*sqrt(q);
-                output.b = (down.y-east.z)/(4*output.a);
-                output.c = (north.z-down.x)/(4*output.a);
-                output.d = (east.x-north.y)/(4*output.a);
-                break;
-                case 2:
-                output.b = 0.5*sqrt(q);
-                output.a = (down.y-east.z)/(4*output.b);
-                output.c = (north.y+east.x)/(4*output.b);
-                output.d = (north.z+down.x)/(4*output.b);
-                break;
-                case 3:
-                output.c = 0.5*sqrt(q);
-                output.a = (north.z-down.x)/(4*output.c);
-                output.b = (north.y+east.x)/(4*output.c);
-                output.d = (east.z+down.y)/(4*output.c);
-                break;
-                case 4:
-                output.d = 0.5*sqrt(q);
-                output.a = (east.x-north.y)/(4*output.d);
-                output.b = (north.z+down.x)/(4*output.d);
-                output.c = (east.z+down.y)/(4*output.d);
-                break;
-            }
-
-            output.normalize();
-            return output;
         }
 
 };
