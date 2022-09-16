@@ -1,3 +1,14 @@
+/**
+ * @file main.cpp
+ * @author Shivam Patel (shivam.patel94@rutgers.edu), Carlton Wu (carlton.wu@rutgers.edu), William Freitag (william.h.freitag@gmail.com)
+ * @brief This runs the main data collection, processing, and transmission loop for the Minerva II flight computer
+ * @version 1.0
+ * @date 2022-09-14
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <Arduino.h>
 #include <SdFat.h>
 #include <FastCRC.h>
@@ -9,26 +20,26 @@
 #define _g_ (9.80665)
 
 typedef struct {
-  short magic;
-  float time;
-  int code;
-  float voltage;
-  float accx;
-  float accy;
-  float accz;
-  float avelx;
-  float avely;
-  float avelz;
-  float magx;
-  float magy;
-  float magz;
-  float altitude;
-  float temp;
-  float w;
-  float x;
-  float y;
-  float z;
-  unsigned int checksum;
+  short magic; // 2 bytes - 2
+  float time; // 4 bytes - 6
+  int code; // 4 bytes - 10
+  float voltage; // 4 bytes - 14
+  float accx; // 4 bytes - 18
+  float accy; // 4 bytes - 22
+  float accz; // 4 bytes - 26
+  float avelx; // 4 bytes - 30
+  float avely; // 4 bytes - 34
+  float avelz; // 4 bytes - 38
+  float magx; // 4 bytes - 42
+  float magy; // 4 bytes - 46
+  float magz; // 4 bytes - 50
+  float altitude; // 4 bytes - 54
+  float temp; // 4 bytes - 58
+  float w; // 4 bytes - 62
+  float x; // 4 bytes - 66
+  float y; // 4 bytes - 70
+  float z; // 4 bytes - 74
+  unsigned int checksum; // 4 bytes - 78
 } __attribute__((packed)) realPacket;
 
 FastCRC32 CRC32;
