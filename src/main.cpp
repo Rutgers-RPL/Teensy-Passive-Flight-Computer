@@ -117,6 +117,8 @@ void loop() {
     sen.f.print(data.y); sen.f.print(","); sen.f.print(data.z); sen.f.println(",");
   } else {
     data.code = -1;
+    data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
+  
   }
 
   if (count % 15 == 0) {

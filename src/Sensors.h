@@ -206,8 +206,9 @@ class Sensors{
                         Serial.println("Can't create file name");
                     }
                 }
-                Serial.println("wtf");
+                //Serial.println("wtf");
                 f = sd.open(fileName, FILE_WRITE);
+                Serial.print("Writing to: ");
                 Serial.println(fileName);
                 if (!f) {
                     Serial.println("Failed opening file.");
