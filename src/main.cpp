@@ -9,13 +9,13 @@
  * 
  */
 
-#include <Arduino.h>
-#include <SdFat.h>
-#include <FastCRC.h>
-#include <Quaternion.h>
-#include <Vec3.h>
-#include <Ahrs.h>
-#include <Sensors.h>
+#include <Arduino.h>    // Arduino framework import
+#include <SdFat.h>      // FAT file format support
+#include <FastCRC.h>    // Cyclic Redundancy Check for data integrity
+#include <Quaternion.h> // 4-D Vectors
+#include <Vec3.h>       // 3-element vector data structure
+#include <Ahrs.h>       // Altitude Heading Reference Systems
+#include <Sensors.h>    // Sensor interface library
 
 #define _g_ (9.80665)
 
@@ -27,7 +27,7 @@ typedef struct {
   float accx; // 4 bytes - 18
   float accy; // 4 bytes - 22
   float accz; // 4 bytes - 26
-  float avelx; // 4 bytes - 30
+  float avelx; // 4 bytes - 30 
   float avely; // 4 bytes - 34
   float avelz; // 4 bytes - 38
   float magx; // 4 bytes - 42
@@ -42,31 +42,31 @@ typedef struct {
   unsigned int checksum; // 4 bytes - 78
 } __attribute__((packed)) realPacket;
 
-FastCRC32 CRC32;
+FastCRC32 CRC32;  // Initializes CRC algorithm
 
-unsigned long offset = 0;
+unsigned long offset = 0;       // TODO: Figure out what this is
 unsigned long previousTime = 0;
 
-double am[3];
+double am[3]; // TODO: Learn
 double wm[3];
 int count;
-int start;
+int start;  // TODO: Delete
 
-const int led = 13;
+const short led = 13;
 long blinkCounter;
 bool ledOn;
 
-Ahrs thisahrs;
-Sensors sen;
+Ahrs thisahrs;  // Initializes Altitude Heading Reference System
+Sensors sen;    // Initializes sensor interface
 
 void setup() {
-  Serial.begin(115200);
-  Serial3.begin(115200);
+  Serial.begin(115200);   // Teensy USB connection
+  Serial3.begin(115200);  // Teensy-to-radio connection
   //while(!Serial) {}
-  while(!Serial3) {}
-  sen.beginSD();
+  while(!Serial3) {}      // Waits for radio
+  sen.beginSD();          // 
   Serial.println("test");
-  Serial3.flush();
+  Serial3.flush();        // Flushes radio buffer
   Serial.println("Starting ...");
 }
 
@@ -95,6 +95,7 @@ void loop() {
   /* read the gyr */
   Vec3 gyr = sen.readGyro();
 
+  // Updates AHRS algorithm with current sensor readings
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
 
@@ -116,8 +117,8 @@ void loop() {
     sen.f.print(data.altitude); sen.f.print(","); sen.f.print(data.temp); sen.f.print(","); sen.f.print(data.w); sen.f.print(","); sen.f.print(data.x); sen.f.print(",");
     sen.f.print(data.y); sen.f.print(","); sen.f.print(data.z); sen.f.println(",");
   } else {
-    data.code = -1;
-    data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
+    data.code = -1; // Sets error code
+    data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);  // Recalculates CRC with error code
   
   }
 
