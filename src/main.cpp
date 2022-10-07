@@ -9,6 +9,7 @@
  * 
  */
 
+/* Includes */
 #include <Arduino.h>    // Arduino framework import
 #include <SdFat.h>      // FAT file format support
 #include <FastCRC.h>    // Cyclic Redundancy Check for data integrity
@@ -19,6 +20,7 @@
 
 #define _g_ (9.80665)
 
+/* Rocket Data Packet Definition */
 typedef struct {
   short magic; // 2 bytes - 2
   float time; // 4 bytes - 6
@@ -48,23 +50,25 @@ unsigned long offset = 0;       // TODO: Figure out what this is
 unsigned long previousTime = 0;
 
 double am[3]; // TODO: Learn
-double wm[3];
-int count;
-int start;  // TODO: Delete
+double wm[3]; // TODO: Delete
+unsigned count;  // Loop counter
+int start;    // TODO: Delete
 
-const short led = 13;
-long blinkCounter;
+const short led = 13; // Teensy LED on pin 13
+long blinkCounter;  
+const short BLINK_INTERVAL = 500; // 500ms blink interval
 bool ledOn;
 
 Ahrs thisahrs;  // Initializes Altitude Heading Reference System
 Sensors sen;    // Initializes sensor interface
 
+/* SETUP */
 void setup() {
   Serial.begin(115200);   // Teensy USB connection
   Serial3.begin(115200);  // Teensy-to-radio connection
   //while(!Serial) {}
   while(!Serial3) {}      // Waits for radio
-  sen.beginSD();          // 
+  sen.beginSD();          // Initializes SD card
   Serial.println("test");
   Serial3.flush();        // Flushes radio buffer
   Serial.println("Starting ...");
@@ -74,8 +78,9 @@ Quaternion orientation = Quaternion();
 long lastTime = micros();
 double threshold = 0.05;
 
+/* LOOP */
 void loop() {
-  if (millis() - blinkCounter >= 500) {
+  if (millis() - blinkCounter >= BLINK_INTERVAL) {
     if (ledOn) {
       ledOn = false;
       digitalWrite(led, LOW);
@@ -132,5 +137,5 @@ void loop() {
     }
   }
 
-  count += 1;
+  count++;
 }
