@@ -40,7 +40,12 @@ const float temperature_cf = 20.0;
 Filter accelFilterX(accel_cf, sampling_time, order);
 Filter accelFilterY(accel_cf, sampling_time, order);
 Filter accelFilterZ(accel_cf, sampling_time, order);
-Filter gyroFilter(gyro_cf, sampling_time, order);
+Filter magFilterX(mag_cf, sampling_time, order);
+Filter magFilterY(mag_cf, sampling_time, order);
+Filter magFilterZ(mag_cf, sampling_time, order);
+Filter gyroFilterX(gyro_cf, sampling_time, order);
+Filter gyroFilterY(gyro_cf, sampling_time, order);
+Filter gyroFilterZ(gyro_cf, sampling_time, order);
 Filter magFilter(mag_cf, sampling_time, order);
 Filter pressureFilter(pressure_cf, sampling_time, order);
 Filter altitudeFilter(altitude_cf, sampling_time, order);
@@ -131,23 +136,35 @@ class Sensors{
             Quaternion q(gyro.getGyroX_rads(),gyro.getGyroY_rads(),gyro.getGyroZ_rads());
             q = imuRot.rotate(q);
             q = allRot.rotate(q);
+
+            gyroFilterX.filterIn(q.b);
+            gyroFilterY.filterIn(q.c);
+            gyroFilterZ.filterIn(q.d);
+
             return Vec3(q.b, q.c, q.d);
         }
 
         Vec3 readFilteredGyro(){
+            Vec3 vec = readGyro();
+            return Vec3(gyroFilterX.filterIn(vec.x),gyroFilterY.filterIn(vec.y),gyroFilterZ.filterIn(vec.z));
+
 
         }
-
+        /* read the mag*/
         Vec3 readMag(){
             sBmm150MagData_t magData = bmm150.getGeomagneticData();
             Quaternion q(magData.x, magData.y, magData.z);
             q = magRot.rotate(q);
             q = allRot.rotate(q);
+            magFilterX.filterIn(q.b);
+            magFilterY.filterIn(q.c);
+            magFilterZ.filterIn(q.d);
             return Vec3(q.b, q.c, q.d);
         }
 
         Vec3 readFilteredMag(){
-            
+            Vec3 vec = readMag();
+            return Vec3(magFilterX.filterIn(vec.x), magFilterY.filterIn(vec.y), magFilterZ.filterIn(vec.z));
         }
 
         float readPressure(){
@@ -155,7 +172,8 @@ class Sensors{
         }
 
         float readFilteredPressure(){
-
+           // float pressure = readPressure();
+           // return pressureFilter.filterIn(pressure);
         }
 
         float readAltitude(){
