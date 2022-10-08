@@ -50,9 +50,7 @@ unsigned long offset = 0;       // TODO: Figure out what this is
 unsigned long previousTime = 0;
 
 double am[3]; // TODO: Learn
-double wm[3]; // TODO: Delete
 unsigned count;  // Loop counter
-int start;    // TODO: Delete
 
 const short led = 13; // Teensy LED on pin 13
 long blinkCounter;  
