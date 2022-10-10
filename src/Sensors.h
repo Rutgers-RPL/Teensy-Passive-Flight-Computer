@@ -1,5 +1,17 @@
+/**
+ * @file Sensors.h
+ * @author Shivam Patel (shivam.patel94@rutgers.edu), Carlton Wu (carlton.wu@rutgers.edu)
+ * @brief This class serves as a wrapper class for all of the sensors on the Minerva II board
+ * @version 1.0
+ * @date 2022-10-10
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #ifndef Sensors_H
 #define Sensors_H
+
 #include <Arduino.h>
 #include <SdFat.h>
 #include <BMI085.h>

@@ -114,7 +114,7 @@ void loop() {
     sen.f.print(data.accy); sen.f.print(","); sen.f.print(data.accz); sen.f.print(","); sen.f.print(data.avelx); sen.f.print(","); sen.f.print(data.avely); sen.f.print(",");
     sen.f.print(data.avelz); sen.f.print(","); sen.f.print(data.magx); sen.f.print(","); sen.f.print(data.magy); sen.f.print(","); sen.f.print(data.magz); sen.f.print(",");
     sen.f.print(data.altitude); sen.f.print(","); sen.f.print(data.temp); sen.f.print(","); sen.f.print(data.w); sen.f.print(","); sen.f.print(data.x); sen.f.print(",");
-    sen.f.print(data.y); sen.f.print(","); sen.f.print(data.z); sen.f.println(",");
+    sen.f.print(data.y); sen.f.print(","); sen.f.print(data.z); sen.f.println(","); sen.f.print("\n");
   } else {
     data.code = -1;
     data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
