@@ -59,6 +59,8 @@ bool ledOn;
 Ahrs thisahrs;
 Sensors sen;
 
+short saveRate=60; // sets the rate that info is saved to the sdblackbox at a 4 transmissions to 1 save ratio
+
 void setup() {
   Serial.begin(115200);
   Serial3.begin(115200);
@@ -120,12 +122,19 @@ void loop() {
     data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
   }
-
+  // if error is present save data more frequintly(notable issue is that the only error code currently implemented appears to be failure to save)
+  if (data.code != 0){
+    saveRate = 15;
+  }
+  else{
+    saveRate = 60;
+  }
+  // else keep the save rate where it is
   if (count % 15 == 0) {
     Serial.write((const uint8_t *)&data, sizeof(data));
     Serial3.write((const uint8_t *)&data, sizeof(data));
 
-    if (sen.sdexists) {
+    if (sen.sdexists && count%saveRate==0) { // save rate modulates if error code is extant
       sen.f.close();
       sen.f = sen.sd.open(sen.fileName, FILE_WRITE);
     }
