@@ -19,16 +19,23 @@ using namespace std;
 class Matrix
 {
 private:
-    size_t n;
     size_t n_rows;
     size_t n_columns;
-    float** matrix;
+    
 public:
+    float** matrix; 
+    Matrix();
     Matrix(size_t r, size_t c);
     Matrix(float** arg);
     ~Matrix(void);
     Matrix getTranspose();
+    float get(size_t r, size_t c);
     static Matrix identity(size_t n);
+    Matrix operator * (const Matrix& m);
+    Matrix operator * (const int& m);
+    Matrix operator * (const float& m);
+    Matrix operator + (const Matrix& m);
+    
 };
 
 #endif Matrix_H
