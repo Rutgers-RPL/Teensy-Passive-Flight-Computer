@@ -87,13 +87,13 @@ void loop() {
   }
 
   /* read the accel */
-  Vec3 acc = sen.readAccel();
+  Vec3 acc = sen.Accelerometer.readAccel();
 
   /* read the mag */
-  Vec3 mag = sen.readMag();
+  Vec3 mag = sen.Magnetometer.readMag();
 
   /* read the gyr */
-  Vec3 gyr = sen.readGyro();
+  Vec3 gyr = sen.Gyro.readGyro();
 
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
