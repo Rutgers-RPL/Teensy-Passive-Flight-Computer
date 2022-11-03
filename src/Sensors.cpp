@@ -1,20 +1,21 @@
-#ifndef Sensors_H
-#define Sensors_H
+
 #include "Sensors.h"
 #include <Arduino.h>
-#include <SdFat.h>
-#include <BMI085.h>
-#include <DFRobot_BMP3XX.h>
-#include <DFRobot_BMM150.h>
-#include <Quaternion.h>
-#include <Vec3.h>
-#include <Mat3x3.h>
-#include <EEPROM.h>
-#include <filters.h>
+//#include <SdFat.h>
+//#include <BMI085.h>
+//#include <DFRobot_BMP3XX.h>
+//#include <DFRobot_BMM150.h>
+// #include <Quaternion.h>
+//#include <Vec3.h>
+// #include <Mat3x3.h>
+// #include <EEPROM.h>
+// #include <filters.h>
 #include <string.h>
 
+
+
 #define FILE_BASE_NAME "FlightLog_"
-const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
+//const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
 
 
 /* accel object */
@@ -26,7 +27,7 @@ DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
 /* mag object*/
 DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
-const uint8_t batteryPin = 22;
+//const uint8_t batteryPin = 22;
 
 const float sampling_time = 0.05;
 IIR::ORDER order = IIR::ORDER::OD3;
@@ -46,10 +47,13 @@ Filter magFilter(mag_cf, sampling_time, order);
 Filter pressureFilter(pressure_cf, sampling_time, order);
 Filter altitudeFilter(altitude_cf, sampling_time, order);
 Filter temperatureFilter(temperature_cf, sampling_time, order);
-class Accelerometer
+Quaternion imuRot = Quaternion::from_euler_rotation(0, 0, 0);
+Quaternion magRot = Quaternion::from_euler_rotation(0, 0, (-1 * PI)/ 2.0);
+Quaternion allRot = Quaternion::from_euler_rotation(PI/2.0, 0, 0);
+
+    Vec3 Accelerometer::readAccel()
     {
-    Vec3 readAccel()
-    {
+        
             /* read the accel */
             accel.readSensor();
             Quaternion q(accel.getAccelX_mss(), accel.getAccelY_mss(), accel.getAccelZ_mss());
@@ -61,17 +65,18 @@ class Accelerometer
             accelFilterZ.filterIn(q.d);
             return Vec3(q.b, q.c, q.d);
         }
+        Accelerometer::Accelerometer(){}
 
-        Vec3 readFilteredAccel()
+        Vec3 Accelerometer::readFilteredAccel()
         {
             Vec3 vec = readAccel();
             return Vec3(accelFilterX.filterIn(vec.x),accelFilterY.filterIn(vec.y),accelFilterZ.filterIn(vec.z));
         }
+        
 
-    };
-class Gyro
-    {
-        Vec3 readGyro()
+    
+
+        Vec3 Gyro::readGyro()
         {
             gyro.readSensor();
 
@@ -81,16 +86,16 @@ class Gyro
             return Vec3(q.b, q.c, q.d);
         }
 
-        Vec3 readFilteredGyro()
+        Vec3 Gyro::readFilteredGyro()
         {
 
         }
-    };
+    
 
 
-class Magnetometer
-    {
-        Vec3 readMag()
+
+    
+        Vec3 Magnetometer::readMag()
         {
             sBmm150MagData_t magData = bmm150.getGeomagneticData();
             Quaternion q(magData.x, magData.y, magData.z);
@@ -99,61 +104,55 @@ class Magnetometer
             return Vec3(q.b, q.c, q.d);
         }
 
-        Vec3 readFilteredMag()
+        Vec3 Magnetometer::readFilteredMag()
         {
             
         }
-    };
 
-class Barometer
-    {
-        float readPressure()
+
+    
+        float Barometer::readPressure()
         {
             return baro.readPressPa();
         }
 
-        float readFilteredPressure()
+        float Barometer::readFilteredPressure()
         {
 
         }
 
-        float readAltitude()
+        float Barometer::readAltitude()
         {
             return baro.readAltitudeM();
         }
 
-        float readFilteredAltitude()
+        float Barometer::readFilteredAltitude()
         {
 
         }
 
-    };
-class Sensors
-{
-    public:
         
-        Quaternion imuRot;
-        Quaternion magRot;
-        Quaternion allRot;
-
-        Mat3x3 M;
-        Vec3 b;
-
-        SdFs sd;
-        FsFile f;
-        bool sdexists = false;
-
-        char* fileName = FILE_BASE_NAME "0000.csv";
-
-        Sensors()
+        float systate::readVoltage()
         {
-            short x = readShort(0);
-            short y = readShort(2);
-            short z = readShort(4);
+            return (15.721519 * ((double) analogRead(batteryPin) / 1023.0));
+        }
 
-            magRot = Quaternion::from_euler_rotation(0, 0, 0);
-            magRot = Quaternion::from_euler_rotation(0, 0, (-1 * PI)/ 2.0);
-            allRot = Quaternion::from_euler_rotation(PI/2.0, 0, 0);
+        float systate::readFilteredVoltage()
+        {
+
+        }
+
+
+    
+
+
+        Sensors::Sensors()
+        {
+
+            //short x = readShort(0);
+            //short y = readShort(2);
+            //short z = readShort(4); //carlton says none of this should be here
+
 
             int status;
             status = accel.begin();
@@ -210,15 +209,7 @@ class Sensors
        
         
         //just leave here, no home currently
-        float readVoltage()
-        {
-            return (15.721519 * ((double) analogRead(batteryPin) / 1023.0));
-        }
 
-        float readFilteredVoltage()
-        {
-
-        }
 
 
 
@@ -275,7 +266,4 @@ class Sensors
     //         EEPROM.write(address+1, (data<<8)>>8);
     //     }
 
-};
 
-
-#endif

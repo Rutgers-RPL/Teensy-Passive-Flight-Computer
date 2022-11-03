@@ -8,6 +8,10 @@
  * @copyright Copyright (c) 2022
  * 
  */
+#include <BMI085.h>
+#include <DFRobot_BMP3XX.h>
+#include <DFRobot_BMM150.h>
+#include <Mat3x3.h>
 
 #include <Arduino.h>
 #include <SdFat.h>
@@ -16,6 +20,7 @@
 #include <Vec3.h>
 #include <Ahrs.h>
 #include <Sensors.h>
+
 
 #define _g_ (9.80665)
 
@@ -58,7 +63,7 @@ bool ledOn;
 
 Ahrs thisahrs;
 Sensors sen;
-
+systate sys;
 void setup() {
   Serial.begin(115200);
   Serial3.begin(115200);
@@ -87,22 +92,22 @@ void loop() {
   }
 
   /* read the accel */
-  Vec3 acc = sen.Accelerometer.readAccel();
+  Vec3 acc = sen.yeet.readAccel();
 
   /* read the mag */
-  Vec3 mag = sen.Magnetometer.readMag();
+  Vec3 mag = sen.yeetm.readMag();
 
   /* read the gyr */
-  Vec3 gyr = sen.Gyro.readGyro();
+  Vec3 gyr = sen.yeetg.readGyro();
 
   thisahrs.update(acc,gyr,mag);
   orientation = thisahrs.q;
 
   Quaternion groundToSensorFrame = orientation;
-
-  realPacket data = {0xBEEF, (micros()-offset) / 1000000.0, 0, sen.readVoltage(), thisahrs.aglobal.b, thisahrs.aglobal.c, thisahrs.aglobal.d,
-                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, baro.readAltitudeM(),
-                      (baro.readTempC()) / 1.0, groundToSensorFrame.a, groundToSensorFrame.b, groundToSensorFrame.c, groundToSensorFrame.d};
+//removed read temp
+  realPacket data = {0xBEEF, (micros()-offset) / 1000000.0, 0, sys.readVoltage(), thisahrs.aglobal.b, thisahrs.aglobal.c, thisahrs.aglobal.d,
+                      gyr.x, gyr.y, gyr.z, mag.x, mag.y, mag.z, sen.yeetb.readAltitude()
+                      , groundToSensorFrame.a, groundToSensorFrame.b, groundToSensorFrame.c, groundToSensorFrame.d};
 
 
   //Serial.printf("(%f, %f, %f)\n", data.accx, data.accy, data.accz);

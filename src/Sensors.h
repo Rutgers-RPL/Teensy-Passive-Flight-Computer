@@ -11,24 +11,17 @@
 #include <EEPROM.h>
 #include <filters.h>
 #include <string.h>
-
 #define FILE_BASE_NAME "FlightLog_"
 const uint8_t BASE_NAME_SIZE = sizeof(FILE_BASE_NAME) - 1;
 
 
 /* accel object */
-Bmi085Accel accel(Wire,0x18);
-/* gyro object */
-Bmi085Gyro gyro(Wire,0x68);
-/* baro object */
-DFRobot_BMP390L_I2C baro(&Wire, baro.eSDOVDD);
-/* mag object*/
-DFRobot_BMM150_I2C bmm150(&Wire, 0x13);
 
-//const uint8_t batteryPin = 22;
+
+const uint8_t batteryPin = 22;
 
 //const float sampling_time = 0.05;
-IIR::ORDER order = IIR::ORDER::OD3;
+//IIR::ORDER order = IIR::ORDER::OD3;
 
 //const float accel_cf = 20.0;
 //const float gyro_cf = 20.0;
@@ -52,6 +45,8 @@ IIR::ORDER order = IIR::ORDER::OD3;
             Vec3 readAccel();
 
             Vec3 readFilteredAccel();
+
+            Accelerometer();
 
     };
 
@@ -83,11 +78,21 @@ IIR::ORDER order = IIR::ORDER::OD3;
         float readFilteredAltitude();
 
     };
+    class systate{
+        public:
+        float readVoltage();
+
+        float readFilteredVoltage();
+
+    };
 class Sensors
 {
 
     public:
-        
+        Accelerometer yeet;
+        Gyro yeetg;
+        Magnetometer yeetm;
+        Barometer yeetb;        
         Quaternion imuRot;
         Quaternion magRot;
         Quaternion allRot;
@@ -101,9 +106,9 @@ class Sensors
 
         char* fileName = FILE_BASE_NAME "0000.csv";
 
-        Sensors()
-        {
-            
+        Sensors();
+        //{
+  
             // short x = readShort(0);
             // short y = readShort(2);
             // short z = readShort(4);
@@ -146,7 +151,7 @@ class Sensors
             // bmm150.setMeasurementXYZ();
 
             // Serial.println("Sensor initialization complete...");
-         }
+         //}
 
     //     Vec3 readAccel(){
     //         /* read the accel */
