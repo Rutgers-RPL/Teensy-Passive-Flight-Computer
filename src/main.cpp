@@ -110,11 +110,13 @@ void loop() {
   data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
   
   if (sen.sdexists && sen.f) {
-    sen.f.print(data.time); sen.f.print(","); sen.f.print(data.code); sen.f.print(","); sen.f.print(data.voltage); sen.f.print(","); sen.f.print(data.accx); sen.f.print(",");
-    sen.f.print(data.accy); sen.f.print(","); sen.f.print(data.accz); sen.f.print(","); sen.f.print(data.avelx); sen.f.print(","); sen.f.print(data.avely); sen.f.print(",");
-    sen.f.print(data.avelz); sen.f.print(","); sen.f.print(data.magx); sen.f.print(","); sen.f.print(data.magy); sen.f.print(","); sen.f.print(data.magz); sen.f.print(",");
-    sen.f.print(data.altitude); sen.f.print(","); sen.f.print(data.temp); sen.f.print(","); sen.f.print(data.w); sen.f.print(","); sen.f.print(data.x); sen.f.print(",");
-    sen.f.print(data.y); sen.f.print(","); sen.f.print(data.z); sen.f.println(",");
+    sen.f.print(data.time); sen.f.print(","); sen.f.print(data.code); sen.f.print(","); sen.f.print(data.voltage); sen.f.print(",");
+    sen.f.print(acc.x); sen.f.print(","); sen.f.print(acc.y); sen.f.print(","); sen.f.print(acc.z); sen.f.print(",");
+    sen.f.print(data.accx); sen.f.print(","); sen.f.print(data.accy); sen.f.print(","); sen.f.print(data.accz); sen.f.print(",");
+    sen.f.print(data.avelx); sen.f.print(","); sen.f.print(data.avely); sen.f.print(","); sen.f.print(data.avelz); sen.f.print(",");
+    sen.f.print(data.magx); sen.f.print(","); sen.f.print(data.magy); sen.f.print(","); sen.f.print(data.magz); sen.f.print(",");
+    sen.f.print(data.altitude); sen.f.print(","); sen.f.print(data.temp); sen.f.print(",");
+    sen.f.print(data.w); sen.f.print(","); sen.f.print(data.x); sen.f.print(","); sen.f.print(data.y); sen.f.print(","); sen.f.print(data.z); sen.f.println(",");
   } else {
     data.code = -1;
     data.checksum = CRC32.crc32((const uint8_t *)&data+sizeof(short), sizeof(realPacket) - 6);
